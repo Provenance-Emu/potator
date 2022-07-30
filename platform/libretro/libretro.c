@@ -45,8 +45,8 @@ static int ghosting_frames         = 0;
 static uint16 *video_buffer        = NULL;
 static uint8 *audio_samples_buffer = NULL;
 static int16_t *audio_out_buffer   = NULL;
-static uint8 *rom_buf              = NULL;
-static const uint8 *rom_data       = NULL;
+static void *rom_buf              = NULL;
+static const void *rom_data       = NULL;
 static size_t rom_size             = 0;
 
 struct sv_color_scheme
@@ -414,7 +414,7 @@ bool retro_load_game(const struct retro_game_info *info)
    if (environ_cb(RETRO_ENVIRONMENT_GET_GAME_INFO_EXT, &info_ext) &&
        info_ext->persistent_data)
    {
-      rom_data = (const uint8*)info_ext->data;
+      rom_data = info_ext->data;
       rom_size = info_ext->size;
    }
 
@@ -422,9 +422,10 @@ bool retro_load_game(const struct retro_game_info *info)
     * content data, must create a copy */
    if (!rom_data)
    {
-      if (!info)
-         return false;
-
+       if (!info) {
+           log_cb(RETRO_LOG_ERROR, "[Potator]: info is null!\n");
+           return false;
+       }
       rom_size = info->size;
       rom_buf  = (uint8*)malloc(rom_size);
 
@@ -435,8 +436,8 @@ bool retro_load_game(const struct retro_game_info *info)
          return false;
       }
 
-      memcpy(rom_buf, (const uint8*)info->data, rom_size);
-      rom_data = (const uint8*)rom_buf;
+       memcpy(rom_buf, (const uint8*)info->data, rom_size);
+       rom_data = (const uint8*)rom_buf;
    }
 
    /* Set input descriptors */
@@ -452,7 +453,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
    /* Initialise emulator */
    supervision_init();
-
+    
    /* Load ROM */
    success = supervision_load(rom_data, rom_size);
 
